@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<!-- Crypto risk reward calculator v0.7 jan 2021 -->
+<!-- Crypto risk reward calculator v0.8 jan 2021 -->
 <head>
 <meta charset="utf-8">
 <script src="https://unpkg.com/@iooxa/article"></script>
@@ -56,11 +56,11 @@ section {
     <div>
         <section>
             <h2>Stop loss calculator</h2>
-            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value), stop_loss_price: value * ((100-stop_loss_percent)/100)}"></r-input>
+            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value), stop_loss_price: value * ((100-stop_loss_percent)/100), target_limit_sell_price: value * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*2)/100)}"></r-input>
             <br /><r-input label="Real money spent" :value="real_money_spent" :change="{real_money_spent: parseFloat(value)}"></r-input>
-            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value), stop_loss_price: price_bought * ((100-value)/100)}"></r-input>
+            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value), stop_loss_price: price_bought * ((100-value)/100), target_limit_sell_price: price_bought * (1+(((value * target_risk_reward)**2)**0.5 + trading_fees*2)/100)}"></r-input>
             <r-button label="BreakEven" outlined="" :click="{stop_loss_percent: -1 * (trading_fees * 2), stop_loss_price: price_bought * (1+(trading_fees * 2)/100)}"></r-button>
-            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_price: parseFloat(value), stop_loss_percent: ((price_bought - value) / price_bought * 100)}"></r-input>
+            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_price: parseFloat(value), stop_loss_percent: ((price_bought - value) / price_bought * 100), target_limit_sell_price: price_bought * (1+(((((price_bought - value) / price_bought * 100) * target_risk_reward)**2)**0.5 + trading_fees*2)/100)}"></r-input>
             Stop loss is set at <r-display :value="stop_loss_percent"></r-display>% (price: <r-display :value="stop_loss_price"></r-display>, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100)"></r-display>)
             <br /><r-input label="Trading fees" :value="trading_fees" :change="{trading_fees: parseFloat(value)}"></r-input> (real money spent for trading fees: <r-display :value="(2*trading_fees/100*real_money_spent)"></r-display>)
             <br />If stop loss triggered, real money left: <r-display :value="real_money_spent * (100-stop_loss_percent)/100"></r-display>, real money diff: <r-display :value="-1 * (real_money_spent * stop_loss_percent/100)"></r-display>
@@ -101,7 +101,7 @@ section {
                 cryptopair = iooxa.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
             }
             fetch("https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {
-                headers: { Origin: window.location.host, Access-Control-Allow-Origin: '*' }
+                headers: { Origin: window.location.host, "Access-Control-Allow-Origin": '*' }
               })  // use Bitstamp API (v2 to allow to choose what pair)
               .then(function (response) {
                 //response.headers.add('Access-Control-Allow-Origin', '*')
