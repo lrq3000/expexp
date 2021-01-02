@@ -94,14 +94,15 @@ section {
     <script>
         function refreshCurrentPrice() {
             <!-- Use a CORS Unblocker to test this request locally: https://github.com/balvin-perrie/Access-Control-Allow-Origin---Unblock/ -->
+            <!-- It can also fail if the host doesn't support CORS (eg, GitHub Pages). Then it's necessary to either use another CORS-enabled host or use a CORS proxy but it's less safe (never send any credential through proxies, only query public APIs!)  -->
             <!-- For interacting with iooxa from custom javascript functions, see https://github.com/iooxa/article/issues/12 and https://github.com/iooxa/article/issues/18 and https://github.com/iooxa/article/issues/10 -->
-            <!-- Or use a CORS proxy but it's less safe -->
             let cryptopair = iooxa.getVariableByName('myscope.cryptopair').get().toLowerCase();  // get current pair to fetch
             if (cryptopair == "other") {
                 cryptopair = iooxa.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
             }
-            fetch("https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {
-                headers: { Origin: window.location.host, "Access-Control-Allow-Origin": '*' }
+            let cors_proxy = "https://cors-anywhere.herokuapp.com/";
+            fetch(cors_proxy+"https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {
+                //headers: { Origin: window.location.host, "Access-Control-Allow-Origin": '*' }
               })  // use Bitstamp API (v2 to allow to choose what pair)
               .then(function (response) {
                 //response.headers.add('Access-Control-Allow-Origin', '*')
