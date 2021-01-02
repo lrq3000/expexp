@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<!-- Crypto risk reward calculator v0.7 jan 2021 -->
+<head>
+<meta charset="utf-8">
+<script src="https://unpkg.com/@iooxa/article"></script>
+<link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
+<style>
+#main {
+    margin: 5em;
+    margin-top: 2em;
+    font-size: 110%;
+}
+h1 {
+    font-size: 1.4em;
+}
+h2 {
+    font-size: 1.1em;
+}
+section {
+    border-bottom: black dashed 1px;
+    padding-bottom: 1em;
+    margin-bottom: 1em;
+}
+</style>
+</head>
+<body onload="refreshCurrentPrice()">
+<div id="main">
+
+<h1>Crypto risk reward calculator</h1>
+
+<r-scope name="myscope">
+
+    <!-- Reactive variables definition -->
+    <!-- iooxa does not support < /> tag format and no dash - in variables names -->
+    <r-var name="cryptopair" value="BTCUSD" type="String"></r-var>
+    <r-var name="cryptopair_custom" value="" type="String"></r-var>
+    <r-var name="price_bought" value="" type="Number"></r-var>
+    <r-var name="real_money_spent" value="10000" type="Number"></r-var>
+    <r-var name="stop_loss_percent" value="2.4" type="Number" format=".1f%%"></r-var>
+    <r-var name="stop_loss_price" value="" type="Number"></r-var>
+    <r-var name="current_price" value="" type="Number"></r-var>
+    <r-var name="current_price_bid" value="" type="Number"></r-var>
+    <!--
+    <r-var name="current_price_diff" value="" type="Number"></r-var>
+    <r-var name="current_price_diff_percent" value="" type="Number"></r-var>
+    <r-var name="stop_loss_current_price_percentage" value="" type="Number"></r-var>
+    <r-var name="target_risk_reward_benefit" value="" type="Number"></r-var>
+    <r-var name="target_risk_reward_loss" value="" type="Number"></r-var>
+    -->
+    <r-var name="target_risk_reward" value="2" type="Number"></r-var>
+    <r-var name="target_limit_sell_price" value="" type="Number"></r-var>
+    <r-var name="trading_fees" value="0.24" type="Number"></r-var>
+
+    <!-- Reactive inputs definition -->
+    <div>
+        <section>
+            <h2>Stop loss calculator</h2>
+            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value), stop_loss_price: value * ((100-stop_loss_percent)/100)}"></r-input>
+            <br /><r-input label="Real money spent" :value="real_money_spent" :change="{real_money_spent: parseFloat(value)}"></r-input>
+            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value), stop_loss_price: price_bought * ((100-value)/100)}"></r-input>
+            <r-button label="BreakEven" outlined="" :click="{stop_loss_percent: -1 * (trading_fees * 2), stop_loss_price: price_bought * (1+(trading_fees * 2)/100)}"></r-button>
+            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_price: parseFloat(value), stop_loss_percent: ((price_bought - value) / price_bought * 100)}"></r-input>
+            Stop loss is set at <r-display :value="stop_loss_percent"></r-display>% (price: <r-display :value="stop_loss_price"></r-display>, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100)"></r-display>)
+            <br /><r-input label="Trading fees" :value="trading_fees" :change="{trading_fees: parseFloat(value)}"></r-input> (real money spent for trading fees: <r-display :value="(2*trading_fees/100*real_money_spent)"></r-display>)
+            <br />If stop loss triggered, real money left: <r-display :value="real_money_spent * (100-stop_loss_percent)/100"></r-display>, real money diff: <r-display :value="-1 * (real_money_spent * stop_loss_percent/100)"></r-display>
+            <br />Accounting for trading fees *2 (at buy & sell), trading fees: <r-display :value="trading_fees * 2" format=".2f"></r-display>%, stop loss with fees: <r-display :value="stop_loss_percent + (trading_fees * 2)" format=".2f"></r-display>%, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100 + (2*trading_fees/100*real_money_spent))"></r-display>, real money left: <r-display :value="real_money_spent * (100-stop_loss_percent)/100 - (2*trading_fees/100*real_money_spent)"></r-display>, real money diff: <r-display :value="-1 * (real_money_spent * stop_loss_percent/100 + (2*trading_fees/100*real_money_spent))"></r-display>
+        </section>
+
+        <section>
+            <h2>Comparison with current price (via Bitstamp)</h2>
+            <r-select bind="cryptopair" values="BTCUSD,BTCEUR,ETHUSD,Other" onclick="refreshCurrentPrice()"></r-select> selected: <r-display :value="cryptopair"></r-display> or other: <r-input bind="cryptopair_custom" label="Custom pair"></r-input>
+            <br />Current price (bid=sell): <r-display :value="current_price_bid"></r-display> (ask=buy: <r-display :value="current_price"></r-display>)
+            <br />Profit (difference with bought price): <r-display :value="(current_price_bid - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price_bid - price_bought)"></r-display>, real money: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought))"></r-display>)
+            <br />Stop loss percent relative to current price: <r-display :value="(current_price_bid - stop_loss_price) / current_price_bid * 100" format=".2f"></r-display>%
+        </section>
+
+        <section>
+            <h2>Risk reward</h2>
+            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: value, target_limit_sell_price: price_bought * (1+(((stop_loss_percent * value)**2)**0.5 + trading_fees*2)/100)}"></r-input>
+            <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0, target_limit_sell_price: price_bought * (1+((trading_fees*2)/100))}"></r-button>
+            <br /><r-input label="Target limit sell price" :value="target_limit_sell_price" :change="{target_limit_sell_price: value}"></r-input>
+            Target limit sell percent: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*2)"></r-display>% (without fees: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5)"></r-display>%)
+            <br />Target limit sell real money left: <r-display :value="real_money_spent * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5)/100)"></r-display>, profit (diff): <r-display :value="real_money_spent * ((((stop_loss_percent * target_risk_reward)**2)**0.5)/100)"></r-display>
+            <br />Target limit sell real money left without fees: <r-display :value="real_money_spent * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*2)/100)"></r-display>, profit (diff): <r-display :value="real_money_spent * ((((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*2)/100)"></r-display>
+        </section>
+
+        <section>
+            Licensed under MIT.
+        </section>
+    </div>
+
+    <!-- Automatic refresh of current price -->
+    <script>
+        function refreshCurrentPrice() {
+            <!-- Use a CORS Unblocker to test this request locally: https://github.com/balvin-perrie/Access-Control-Allow-Origin---Unblock/ -->
+            <!-- For interacting with iooxa from custom javascript functions, see https://github.com/iooxa/article/issues/12 and https://github.com/iooxa/article/issues/18 and https://github.com/iooxa/article/issues/10 -->
+            let cryptopair = iooxa.getVariableByName('myscope.cryptopair').get().toLowerCase();  // get current pair to fetch
+            if (cryptopair == "other") {
+                cryptopair = iooxa.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
+            }
+            fetch("https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {mode: 'cors'})  // use Bitstamp API (v2 to allow to choose what pair)
+              .then(function (response) {
+                //response.headers.add('Access-Control-Allow-Origin', '*')
+                return response.text();  // get as text, avoids some errors if undefined and trying to parse to JSON directly
+              })
+              .then(function (data) {
+                myJson = (data ? JSON.parse(data) : {});  // parse as JSON now
+                // Update the iooxa variables
+                iooxa.getVariableByName('myscope.current_price').set(myJson.ask);
+                iooxa.getVariableByName('myscope.current_price_bid').set(myJson.bid);
+              })
+              .catch(function (error) {
+                console.log("Error: ");
+                console.log(error);
+              });
+        }
+
+        const interval = setInterval(refreshCurrentPrice, 3000);  // refresh every 3 seconds
+        //clearInterval(interval);  // to stop the constant refresh
+    </script>
+
+</r-scope>
+
+</div>
+</body>
+</html>
