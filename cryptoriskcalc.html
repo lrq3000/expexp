@@ -99,7 +99,7 @@ section {
             if (cryptopair == "other") {
                 cryptopair = iooxa.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
             }
-            fetch("https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {mode: 'cors'})  // use Bitstamp API (v2 to allow to choose what pair)
+            fetch("https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/')  // use Bitstamp API (v2 to allow to choose what pair)
               .then(function (response) {
                 //response.headers.add('Access-Control-Allow-Origin', '*')
                 return response.text();  // get as text, avoids some errors if undefined and trying to parse to JSON directly
