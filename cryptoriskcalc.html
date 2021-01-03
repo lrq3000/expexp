@@ -3,11 +3,11 @@
 <!-- Crypto risk reward calculator v0.8 jan 2021 -->
 <head>
 <meta charset="utf-8">
-<script src="https://unpkg.com/@iooxa/article"></script>
 <link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
+<script src="https://unpkg.com/@iooxa/article"></script>
 <style>
 #main {
-    margin: 5em;
+    margin: 3em;
     margin-top: 2em;
     font-size: 110%;
 }
@@ -22,13 +22,19 @@ section {
     padding-bottom: 1em;
     margin-bottom: 1em;
 }
+r-input, input, mwc-textfield, .mdc-floating-label, .mdc-floating-label--float-above, .mdc-text-field--filled {
+    font-size: 130% !important;
+}
+body {
+    --mdc-typography-subtitle1-font-size: 100%;
+}
 </style>
 </head>
 <body onload="refreshCurrentPrice()">
 <div id="main">
 
+<article>
 <h1>Crypto risk reward calculator</h1>
-
 <r-scope name="myscope">
 
     <!-- Reactive variables definition -->
@@ -100,7 +106,7 @@ section {
             if (cryptopair == "other") {
                 cryptopair = iooxa.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
             }
-            let cors_proxy = "https://thingproxy.freeboard.io/fetch/";
+            let cors_proxy = "https://cors-anywhere.herokuapp.com/";
             fetch(cors_proxy+"https://www.bitstamp.net/api/v2/ticker/"+cryptopair+'/', {
                 //headers: { Origin: window.location.host, "Access-Control-Allow-Origin": '*' }
               })  // use Bitstamp API (v2 to allow to choose what pair)
@@ -120,11 +126,12 @@ section {
               });
         }
 
-        const interval = setInterval(refreshCurrentPrice, 5000);  // refresh every 5 seconds
+        const interval = setInterval(refreshCurrentPrice, 30000);  // refresh every 5 seconds
         //clearInterval(interval);  // to stop the constant refresh
     </script>
 
 </r-scope>
+</article>
 
 </div>
 </body>
