@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<!-- Crypto risk reward calculator v1.0 jan 2021 -->
+<!-- Crypto risk reward calculator v1.1 jan 2021 -->
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
@@ -87,9 +87,9 @@ body {
 
         <section>
             <h2>Risk reward</h2>
-            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat(value), target_limit_sell_price: price_bought * (1+(((stop_loss_percent * value)**2)**0.5 + trading_fees*(2*target_risk_reward+2))/100)}"></r-input>
+            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat(value), target_limit_sell_price: price_bought * (1+(((stop_loss_percent * parseFloat(value))**2)**0.5 + trading_fees*(2*parseFloat(value)+2))/100)}"></r-input>
             <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0, target_limit_sell_price: price_bought * (1+((trading_fees*2)/100))}"></r-button>
-            <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{target_limit_sell_price: parseFloat(value)}"></r-input>
+            <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{ target_limit_sell_price: parseFloat(value), target_risk_reward: ((value - price_bought) / price_bought * 100) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input> <!-- TODO: the calculation of target_risk_reward from target_limit_sell_price is incorrect, it doesn't properly account for the fees (but the problem is how to do that! It's a recursive loop because it depends on target_risk_reward -->
             <ul>
             <li><b>Target limit sell percent: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))" format=".2f"></r-display>%</b> (sell after fees: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward))" format=".2f"></r-display>%, without fees: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5)" format=".2f"></r-display>%, limit price without fees: <r-display :value="price_bought * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5)/100)"></r-display>)</li>
             <li>Target limit sell real money left after fees: <r-display :value="real_money_spent * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward))/100)"></r-display>, <b>profit (diff): <r-display :value="real_money_spent * ((((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward))/100)"></r-display></b></li>
@@ -98,7 +98,7 @@ body {
         </section>
 
         <section>
-            Licensed under MIT.
+            <p>Licensed under MIT. <a href="https://github.com/lrq3000/expexp">Source code</a>.</p>
         </section>
     </div>
 
