@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<!-- Crypto risk reward calculator v1.1 jan 2021 -->
+<!-- Crypto risk reward calculator v1.2 jan 2021 -->
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
@@ -87,7 +87,7 @@ body {
 
         <section>
             <h2>Risk reward</h2>
-            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat(value), target_limit_sell_price: price_bought * (1+(((stop_loss_percent * parseFloat(value))**2)**0.5 + trading_fees*(2*parseFloat(value)+2))/100)}"></r-input>
+            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat((value**2)**0.5), target_limit_sell_price: price_bought * (1+(((stop_loss_percent * parseFloat(value))**2)**0.5 + trading_fees*(2*parseFloat(value)+2))/100)}"></r-input>
             <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0, target_limit_sell_price: price_bought * (1+((trading_fees*2)/100))}"></r-button>
             <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{ target_limit_sell_price: parseFloat(value), target_risk_reward: (((value - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input>
             <ul>
