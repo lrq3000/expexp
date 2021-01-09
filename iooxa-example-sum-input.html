@@ -1,0 +1,18 @@
+<!-- Basic iooxa reactive components example of a sum with input, without reactive variables -->
+
+<script src="https://unpkg.com/@iooxa/article"></script>
+<link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
+
+<div style="display: flex; flex-direction: column">
+<r-var name="a" value="1" type="Number"></r-var>
+<r-var name="b" value="10" type="Number"></r-var>
+<r-var name="c" value="100" type="Number"></r-var>
+<r-var name="sum" value="111" type="Number"></r-var>
+<r-var name="sum_squared" value="12321" type="Number"></r-var>
+
+<r-input label="a" :value="a" :change="{a: parseFloat(value), sum: parseFloat(value)+b+c, sum_squared: (parseFloat(value)+b+c)**2}"></r-input> <!-- as of January 2021, it's necessary to use parseFloat(value) to ensure that the input value will be stored as a float and not as a string, as otherwise the calculations down the stream such as sum will return a concatenated string instead of a sum of numbers. When this will be fixed, a simple bind="a" will be sufficient here instead of :value="a" and :change="{a: parseFloat(value)}" -->
+<r-input label="b" :value="b" :change="{b: parseFloat(value), sum: a+parseFloat(value)+c, sum_squared: (a+parseFloat(value)+c)**2}"></r-input>
+<r-input label="c" :value="c" :change="{c: parseFloat(value), sum: a+b+parseFloat(value), sum_squared: (a+b+parseFloat(value))**2}"></r-input>
+<r-input label="Sum" :value="sum" :change="{sum: value, a: value-b-c, sum_squared: value**2}"></r-input> <!-- Simply change one variable so that the input sum is correct -->
+<r-input label="Sum squared" bind="sum_squared"></r-input>
+</div>
