@@ -1,11 +1,8 @@
 <!doctype html>
 <html>
-<!-- Crypto risk reward calculator v1.3 jan 2021 -->
-<!-- This shows how to create and use reactive r-vars (or reactive variables). -->
-<!-- Reactive variables are r-vars with :value="" in their definition (beware: do not confuse with value="" without the semicolon! The semicolon makes it reactive = recalculates on change of the linked variables in the equation! Also do NOT declare both :value="" and value="", because the value="" declaration will make the variable static, so you need to remove value="" for the reactive attribute :value="" to be processed!) -->
-<!-- Then these variables can either just be kept hidden or r-display but without direct inputs, as intermediate variables to simplify more complex calculations down the line -->
-<!-- But reactive variables can also have a dedicated input, in this case the input will NOT modify the reactive variable directly, so it's useless to use bind="reactive-variable", but rather use :change="{parent-var: how_to_recalculate}" so that we modify one or multiple of the parent variables by using an inverse calculation you define, so that the reactive calculation in the reactive variable's definition will end up to the exact same value the user just inputted. To show the current value in the input, simply define :value="reactive-variable" in addition to the :change="". See the reactive variables below for an example of how this is implemented. -->
-<!-- See cryptoriskcalc_no-reactive-vars.html for the same calculator without using iooxa's reactive variables -->
+<!-- Crypto risk reward calculator v1.2 jan 2021 -->
+<!-- This version implements the same calculator but without using reactive variables (ie, r-var with :value), so that all the cascading is done manually, this is kept as an example of how to use iooxa without reactive variables, which is arguably less easily maintainable and readable, but allows full control over all interactions between variables (so that we can create asymmetrical calculations) -->
+<!-- See cryptoriskcalc.html for the same calculator but using iooxa's reactive variables which is more concise -->
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
@@ -49,7 +46,7 @@ body {
     <r-var name="price_bought" value="" type="Number"></r-var>
     <r-var name="real_money_spent" value="10000" type="Number"></r-var>
     <r-var name="stop_loss_percent" value="2.4" type="Number" format=".1f%%"></r-var>
-    <r-var name="stop_loss_price" type="Number" :value="price_bought * ((100-stop_loss_percent)/100)"></r-var> <!-- Reactive variable -->
+    <r-var name="stop_loss_price" value="" type="Number"></r-var>
     <r-var name="current_price" value="" type="Number"></r-var>
     <r-var name="current_price_bid" value="" type="Number"></r-var>
     <!--
@@ -60,18 +57,18 @@ body {
     <r-var name="target_risk_reward_loss" value="" type="Number"></r-var>
     -->
     <r-var name="target_risk_reward" value="2" type="Number"></r-var>
-    <r-var name="target_limit_sell_price" type="Number" :value="price_bought * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))/100)"></r-var> <!-- Reactive variable -->
+    <r-var name="target_limit_sell_price" value="" type="Number"></r-var>
     <r-var name="trading_fees" value="0.24" type="Number"></r-var>
 
     <!-- Reactive inputs definition -->
     <div>
         <section>
             <h2>Stop loss calculator</h2>
-            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value)}"></r-input>
+            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value), stop_loss_price: value * ((100-stop_loss_percent)/100), target_limit_sell_price: value * (1+(((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))/100)}"></r-input>
             <br /><r-input label="Real money spent" :value="real_money_spent" :change="{real_money_spent: parseFloat(value)}"></r-input>
-            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value)}"></r-input>
-            <r-button label="BreakEven" outlined="" :click="{stop_loss_percent: -1 * (trading_fees * 2)}"></r-button> (BreakEven price: <r-display :value="price_bought * (1+(trading_fees * 2 /100))"></r-display>)
-            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_percent: ((price_bought - value) / price_bought * 100)}"></r-input>
+            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value), stop_loss_price: price_bought * ((100-value)/100), target_limit_sell_price: price_bought * (1+(((value * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))/100)}"></r-input>
+            <r-button label="BreakEven" outlined="" :click="{stop_loss_percent: -1 * (trading_fees * 2), stop_loss_price: price_bought * (1+(trading_fees * 2)/100)}"></r-button> (BreakEven price: <r-display :value="price_bought * (1+(trading_fees * 2)/100)"></r-display>)
+            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_price: parseFloat(value), stop_loss_percent: ((price_bought - value) / price_bought * 100), target_limit_sell_price: price_bought * (1+(((((price_bought - value) / price_bought * 100) * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))/100)}"></r-input>
             Stop loss is set at <r-display :value="stop_loss_percent"></r-display>% (price: <r-display :value="stop_loss_price"></r-display>, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100)"></r-display>)
             <br /><r-input label="Trading fees" :value="trading_fees" :change="{trading_fees: parseFloat(value)}"></r-input> (real money spent for trading fees: <r-display :value="(2*trading_fees/100*real_money_spent)"></r-display>)
             <ul>
@@ -92,9 +89,9 @@ body {
 
         <section>
             <h2>Risk reward</h2>
-            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat((value**2)**0.5)}"></r-input> <!-- The :change may seem a bit weird but it's to ensure that target_risk_reward always has a positive value. It is theoretically conceivable to calculate negative risk reward ratios but in practice it's useless so we don't bother here and we take this shortcut to avoid complexifying the calculations. -->
-            <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0}"></r-button>
-            <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{ target_risk_reward: (((value - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input> <!-- the inverse calculation may seem complex but it's simple conceptually: target_risk_reward = how many times we can multiply the (stop loss + 2xfees) to obtain the target sell limit price. Since we will pay some fees, we also subtract 2xfees once from the target sell limit price before calculating the division (note that there are two 2xfees variables in this equation: one is constant and is just subtracted from the target price, one is variable as it is inside the stop loss + fees variable which we multiply) -->
+            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat((value**2)**0.5), target_limit_sell_price: price_bought * (1+(((stop_loss_percent * parseFloat(value))**2)**0.5 + trading_fees*(2*parseFloat(value)+2))/100)}"></r-input>
+            <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0, target_limit_sell_price: price_bought * (1+((trading_fees*2)/100))}"></r-button>
+            <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{ target_limit_sell_price: parseFloat(value), target_risk_reward: (((value - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input>
             <ul>
             <!-- <li>Debug: Total percent diff: <r-display :value="(target_limit_sell_price - price_bought) / price_bought * 100" format=".2f"></r-display>, constant effective fees: <r-display :value="trading_fees*2" format=".2f"></r-display>, Integrated fees: <r-display :value="((stop_loss_percent**2)**0.5 + trading_fees*2)" format=".2f"></r-display></li>, inversely calculated target risk reward: <r-display :value="(((target_limit_sell_price - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2)" format=".2f"></r-display> -->
             <li><b>Target limit sell percent: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))" format=".2f"></r-display>%</b> <i>(=<r-display :value="(stop_loss_percent**2)**0.5 + trading_fees*2" format=".2f"></r-display>% x <r-display :value="target_risk_reward" format=".1f"></r-display> to cover risk incl fees + <r-display :value="trading_fees * 2" format=".2f"></r-display>% of effective fees that will be paid)</i>
