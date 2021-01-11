@@ -82,7 +82,7 @@ body {
 
         <section>
             <h2>Comparison with current price (via Bitstamp)</h2>
-            <r-select bind="cryptopair" values="BTCUSD,BTCEUR,ETHUSD,Other" onclick="refreshCurrentPrice()"></r-select> selected: <r-display :value="cryptopair"></r-display> or other: <r-input bind="cryptopair_custom" label="Custom pair"></r-input>
+            <r-select bind="cryptopair" values="BTCUSD,BTCEUR,ETHUSD,ETHEUR,Other" onclick="refreshCurrentPrice()"></r-select> selected: <r-display :value="cryptopair"></r-display> or other: <r-input bind="cryptopair_custom" label="Custom pair"></r-input>
             <ul>
             <li>Current price (bid=sell): <r-display :value="current_price_bid"></r-display> (ask=buy: <r-display :value="current_price"></r-display>)</li>
             <li>Profit (difference with bought price): <r-display :value="(current_price_bid - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price_bid - price_bought)"></r-display>, real money: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought))"></r-display> minus fees: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought)) - ((trading_fees * 2 / 100) * real_money_spent)"></r-display>)</li>
