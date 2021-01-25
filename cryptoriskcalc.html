@@ -84,8 +84,8 @@ body {
             <h2>Comparison with current price (via Bitstamp)</h2>
             <r-select bind="cryptopair" values="BTCUSD,BTCEUR,ETHUSD,ETHEUR,ETHBTC,Other" onclick="refreshCurrentPrice()"></r-select> selected: <r-display :value="cryptopair"></r-display> or other: <r-input bind="cryptopair_custom" label="Custom pair"></r-input>
             <ul>
-            <li>Current price (bid=sell): <r-display :value="current_price_bid"></r-display> (ask=buy: <r-display :value="current_price"></r-display>)</li>
-            <li>Profit (difference with bought price): <r-display :value="(current_price_bid - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price_bid - price_bought)"></r-display>, real money: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought))"></r-display> minus fees: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought)) - ((trading_fees * 2 / 100) * real_money_spent)"></r-display>)</li>
+            <li>Current price (bid=sell): <r-display :value="String(current_price_bid)"></r-display> (ask=buy: <r-display :value="String(current_price)"></r-display>)</li>
+            <li>Profit (difference with bought price): <r-display :value="(current_price_bid - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price_bid - price_bought)" format="s"></r-display>, <strong>real money diff: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought)) - ((trading_fees * 2 / 100) * real_money_spent)"></r-display></strong>, excluding fees: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought))"></r-display>)</li>
             <li>Stop loss percent relative to current price: <r-display :value="(current_price_bid - stop_loss_price) / current_price_bid * 100" format=".2f"></r-display>%</li>
             </ul>
         </section>
