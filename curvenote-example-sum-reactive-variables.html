@@ -1,0 +1,26 @@
+<!--
+Basic curvenote/article reactive components example, with reactive variables, which allows cascaded reactive calculation of the sum's squared 
+Curvenote is the new name for iooxa and before that ink-components, see curvenote.dev and https://github.com/curvenote/article
+Made on 2023-11-08 by Stephen Larroque
+-->
+
+<link rel="stylesheet" href="https://unpkg.com/@curvenote/article/dist/curvenote.css" />
+<script async src="https://unpkg.com/@curvenote/article"></script>
+
+<div style="display: flex; flex-direction: column">
+<r-var name="a" value="1" type="Number"></r-var>
+<r-var name="b" value="10" type="Number"></r-var>
+<r-var name="c" value="100" type="Number"></r-var>
+<r-var name="sum" :value="a+b+c" type="Number"></r-var> <!-- using :value="" instead of value="" makes the calculation reactive, ie it will be recalculated whenever the parent variables used in the equation will be updated. Do NOT define value="" when :value="" is defined as otherwise value="" will take precedence over :value="" and make the variable static again. -->
+<r-var name="sumsquared" :value="sum**2" type="Number"></r-var> <!-- Sum's squared is also reactive and dependent on sum, so that it will be recalculated automatically in cascade when any parent variable will be updated (a, b, c or sum) -->
+
+    <div>
+    <h1>Curvenote simple reactive variables example to calculate a sum</h1>
+    <p>This shows an example of how to use Curvenote reactive components to make a simple calculator that is programmed in a very human natural way (compare with <a href="iooxa-example-sum-input.html">the same script but without reactive variables</a>).</p>
+    <br />a: <r-input label="a" :value="a" :change="{a: parseFloat(value)}"></r-input> <!-- as of January 2021, it's necessary to use parseFloat(value) to ensure that the input value will be stored as a float and not as a string, as otherwise the calculations down the stream such as sum will return a concatenated string instead of a sum of numbers. When this will be fixed, a simple bind="a" will be sufficient here instead of :value="a" and :change="{a: parseFloat(value)}" -->
+    b: <r-input label="b" :value="b" :change="{b: parseFloat(value)}"></r-input>
+    c: <r-input label="c" :value="c" :change="{c: parseFloat(value)}"></r-input>
+    <br />sum (a+b+c): <r-input label="Sum" :value="sum" :change="{a: value-b-c}"></r-input> <!-- Instead of assigning the new `value` in `sum` with `:change="{sum: value}"`, which would only update `sum` when we edit `sum` but not edit the summed variables `a,b,c`, we instead change one of these variables, and then the reactive calculation will trickle downstream and force the recalculation of `sum`, which should be exactly the same as the user inputted. In other words, once the user changes sum value and validates, the value is then in fact replaced by the recalculation from a+b+c, with a changed retroactively, but the user does not see anything because we readjusted a so that sum is equal to the new user inputted value. -->
+    <br />sum squared (a+b+c)²: <r-input label="Sum squared" :value="sumsquared" :change="{a: Math.sqrt(parseFloat(value))-b-c}"></r-input> <!-- Here we do the same but in addition we use a Javascript function to calculate the square root. We can use any Javascript function in reactive properties (any property prepended by `:` in curvenote components) -->
+    </div>
+</div>
