@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<!-- Crypto risk reward calculator v1.5.1 June 2021 -->
+<!-- Crypto risk reward calculator v1.6.0 November 2023 -->
 <!-- This shows how to create and use reactive r-vars (or reactive variables). -->
 <!-- Reactive variables are r-vars with :value="" in their definition (beware: do not confuse with value="" without the semicolon! The semicolon makes it reactive = recalculates on change of the linked variables in the equation! Also do NOT declare both :value="" and value="", because the value="" declaration will make the variable static, so you need to remove value="" for the reactive attribute :value="" to be processed!) -->
 <!-- Then these variables can either just be kept hidden or r-display but without direct inputs, as intermediate variables to simplify more complex calculations down the line -->
@@ -8,8 +8,8 @@
 <!-- See cryptoriskcalc_no-reactive-vars.html for the same calculator without using iooxa's reactive variables -->
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://unpkg.com/@iooxa/article/dist/iooxa.css">
-<script src="https://unpkg.com/@iooxa/article"></script>
+<link rel="stylesheet" href="https://unpkg.com/@curvenote/article/dist/curvenote.css" />
+<script async src="https://unpkg.com/@curvenote/article"></script>
 <style>
 #main {
     margin: 3em;
@@ -35,7 +35,7 @@ body {
 }
 </style>
 </head>
-<body onload="refreshCurrentPrice()">
+<body onload="refreshCurrentPrice_v2()">
 <div id="main">
 
 <article>
@@ -50,8 +50,8 @@ body {
     <r-var name="real_money_spent" value="10000" type="Number"></r-var>
     <r-var name="stop_loss_percent" value="2.4" type="Number" format=".1f%%"></r-var>
     <r-var name="stop_loss_price" type="Number" :value="price_bought * ((100-stop_loss_percent)/100)"></r-var> <!-- Reactive variable -->
-    <r-var name="current_price" value="" type="Number"></r-var>
-    <r-var name="current_price_bid" value="" type="Number"></r-var>
+    <r-var name="current_price" value="" type="Number" format=".3s"></r-var>
+    <!-- <r-var name="current_price_bid" value="" type="Number"></r-var> // Does NOT work anymore since we do not use a CEX api to refresh price, on dexes we would instead try to find the slippage instead of the bid price or the spread, but here we use a chainlink oracle, not a dex pool to refresh price, so we can't know the slippage/spread -->
     <!--
     <r-var name="current_price_diff" value="" type="Number"></r-var>
     <r-var name="current_price_diff_percent" value="" type="Number"></r-var>
@@ -67,13 +67,13 @@ body {
     <div>
         <section>
             <h2>Stop loss calculator</h2>
-            <r-input label="Price bought" :value="price_bought" :change="{price_bought: parseFloat(value)}"></r-input>
-            <br /><r-input label="Real money spent" :value="real_money_spent" :change="{real_money_spent: parseFloat(value)}"></r-input>
-            <br /><r-input label="Stop loss (percentage)" :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value)}"></r-input>
+            Price bought: <r-input :value="price_bought" :change="{price_bought: parseFloat(value)}"></r-input>
+            <br />Real money spent: <r-input :value="real_money_spent" :change="{real_money_spent: parseFloat(value)}"></r-input>
+            <br />Stop loss (percentage): <r-input :value="stop_loss_percent" :change="{stop_loss_percent: parseFloat(value)}"></r-input>
             <r-button label="BreakEven" outlined="" :click="{stop_loss_percent: -1 * (trading_fees * 2)}"></r-button> (BreakEven price: <r-display :value="price_bought * (1+(trading_fees * 2 /100))" format=".4s"></r-display>)
-            <br /><r-input label="Stop loss (price)" :value="stop_loss_price" :change="{stop_loss_percent: ((price_bought - value) / price_bought * 100)}"></r-input>
+            <br />Stop loss (price): <r-input :value="stop_loss_price" :change="{stop_loss_percent: ((price_bought - value) / price_bought * 100)}"></r-input>
             Stop loss is set at <r-display :value="stop_loss_percent"></r-display>% (price: <r-display :value="stop_loss_price" format=".4s"></r-display>, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100)" format=".4s"></r-display>)
-            <br /><r-input label="Trading fees" :value="trading_fees" :change="{trading_fees: parseFloat(value)}"></r-input> (real money spent for trading fees: <r-display :value="(2*trading_fees/100*real_money_spent)"></r-display>)
+            <br />Trading fees: <r-input :value="trading_fees" :change="{trading_fees: parseFloat(value)}"></r-input> (real money spent for trading fees: <r-display :value="(2*trading_fees/100*real_money_spent)"></r-display>)
             <ul>
             <li>If stop loss triggered, real money left: <r-display :value="real_money_spent * (100-stop_loss_percent)/100"></r-display>, real money diff: <r-display :value="-1 * (real_money_spent * stop_loss_percent/100)"></r-display></li>
             <li>Accounting for trading fees *2 (at buy & sell), trading fees: <r-display :value="trading_fees * 2" format=".2f"></r-display>%, <b>stop loss with fees: <r-display :value="stop_loss_percent + (trading_fees * 2)" format=".2f"></r-display>%</b>, diff: <r-display :value="-1 * (price_bought * stop_loss_percent/100 + (2*trading_fees/100*real_money_spent))"></r-display>, real money left: <r-display :value="real_money_spent * (100-stop_loss_percent)/100 - (2*trading_fees/100*real_money_spent)"></r-display>, <b>real money diff: <r-display :value="-1 * (real_money_spent * stop_loss_percent/100 + (2*trading_fees/100*real_money_spent))"></r-display></b></li>
@@ -81,20 +81,21 @@ body {
         </section>
 
         <section>
-            <h2>Comparison with current price (via Bitstamp)</h2>
-            <r-select bind="cryptopair" values="BTCUSD,BTCEUR,ETHUSD,ETHEUR,ETHBTC,Other" onclick="refreshCurrentPrice()"></r-select> selected: <r-display :value="cryptopair"></r-display> or other: <r-input bind="cryptopair_custom" label="Custom pair"></r-input>
+            <h2>Comparison with real-time current price</h2>
+            <r-select bind="cryptopair" values="BTCUSD,ETHUSD,ETHBTC,EURUSD,Other" onclick="refreshCurrentPrice_v2()"></r-select> selected: <r-display :value="cryptopair"></r-display>
+            <br />or other (Custom pair Chainlink oracle's contract, specify the first part of the ENS domain, eg, BTC-USD): <r-input bind="cryptopair_custom"></r-input>
             <ul>
-            <li>Current price (bid=sell): <r-display :value="String(current_price_bid)"></r-display> (ask=buy: <r-display :value="String(current_price)"></r-display>, spread: <r-display :value="(current_price - current_price_bid) / current_price * 100" format=".2f"></r-display>%)</li>
-            <li>Profit (difference with bought price): <r-display :value="(current_price_bid - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price_bid - price_bought)" format=".3s"></r-display>, <strong>real money diff: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought)) - ((trading_fees * 2 / 100) * real_money_spent)"></r-display></strong>, excluding fees: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price_bid) / price_bought))"></r-display>)</li>
-            <li>Stop loss percent relative to current price: <r-display :value="(current_price_bid - stop_loss_price) / current_price_bid * 100" format=".2f"></r-display>%</li>
+            <li>Current price: <!-- (bid=sell): <r-display :value="String(current_price_bid)"></r-display> (ask=buy):--> <r-display :value="String(current_price)"></r-display> <!-- , spread: <r-display :value="(current_price - current_price_bid) / current_price * 100" format=".2f"></r-display>%) --></li>
+            <li>Profit (difference with bought price): <r-display :value="(current_price - price_bought)/price_bought*100" format=".2f"></r-display>% (theoretical: <r-display :value="(current_price - price_bought)" format=".3s"></r-display>, <strong>real money diff: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price) / price_bought)) - ((trading_fees * 2 / 100) * real_money_spent)"></r-display></strong>, excluding fees: <r-display :value="-1 * (real_money_spent * ((price_bought - current_price) / price_bought))"></r-display>)</li>
+            <li>Stop loss percent relative to current price: <r-display :value="(current_price - stop_loss_price) / current_price * 100" format=".2f"></r-display>%</li>
             </ul>
         </section>
 
         <section>
             <h2>Risk reward</h2>
-            <br /><r-input label="Target risk reward (multiplier)" :value="target_risk_reward" :change="{target_risk_reward: parseFloat((value**2)**0.5)}"></r-input> <!-- The :change may seem a bit weird but it's to ensure that target_risk_reward always has a positive value. It is theoretically conceivable to calculate negative risk reward ratios but in practice it's useless so we don't bother here and we take this shortcut to avoid complexifying the calculations. -->
+            <br />Target risk reward (multiplier): <r-input :value="target_risk_reward" :change="{target_risk_reward: parseFloat((value**2)**0.5)}"></r-input> <!-- The :change may seem a bit weird but it's to ensure that target_risk_reward always has a positive value. It is theoretically conceivable to calculate negative risk reward ratios but in practice it's useless so we don't bother here and we take this shortcut to avoid complexifying the calculations. -->
             <r-button label="BreakEven" outlined="" :click="{target_risk_reward: 0}"></r-button>
-            <br /><r-input label="Target limit sell price (with fees)" :value="target_limit_sell_price" :change="{ target_risk_reward: (((value - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input> <!-- the inverse calculation may seem complex but it's simple conceptually: target_risk_reward = how many times we can multiply the (stop loss + 2xfees) to obtain the target sell limit price. Since we will pay some fees, we also subtract 2xfees once from the target sell limit price before calculating the division (note that there are two 2xfees variables in this equation: one is constant and is just subtracted from the target price, one is variable as it is inside the stop loss + fees variable which we multiply) -->
+            <br />Target limit sell price (with fees): <r-input :value="target_limit_sell_price" :change="{ target_risk_reward: (((value - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2) }"></r-input> <!-- the inverse calculation may seem complex but it's simple conceptually: target_risk_reward = how many times we can multiply the (stop loss + 2xfees) to obtain the target sell limit price. Since we will pay some fees, we also subtract 2xfees once from the target sell limit price before calculating the division (note that there are two 2xfees variables in this equation: one is constant and is just subtracted from the target price, one is variable as it is inside the stop loss + fees variable which we multiply) -->
             <ul>
             <!-- <li>Debug: Total percent diff: <r-display :value="(target_limit_sell_price - price_bought) / price_bought * 100" format=".2f"></r-display>, constant effective fees: <r-display :value="trading_fees*2" format=".2f"></r-display>, Integrated fees: <r-display :value="((stop_loss_percent**2)**0.5 + trading_fees*2)" format=".2f"></r-display></li>, inversely calculated target risk reward: <r-display :value="(((target_limit_sell_price - price_bought) / price_bought * 100) - trading_fees*2) / ((stop_loss_percent**2)**0.5 + trading_fees*2)" format=".2f"></r-display> -->
             <li><b>Target limit sell percent: <r-display :value="-1 * (((stop_loss_percent * target_risk_reward)**2)**0.5 + trading_fees*(2*target_risk_reward+2))" format=".2f"></r-display>%</b> <i>(=<r-display :value="(stop_loss_percent**2)**0.5 + trading_fees*2" format=".2f"></r-display>% x <r-display :value="target_risk_reward" format=".1f"></r-display> to cover risk incl fees + <r-display :value="trading_fees * 2" format=".2f"></r-display>% of effective fees that will be paid)</i>
@@ -111,6 +112,8 @@ body {
 
     <!-- Automatic refresh of current price -->
     <script>
+        /*
+        // DEPRECATED by refreshCurrentPrice_v2() which uses web3.js to query the blockchain directly and hence is more robust than a CEX API
         function refreshCurrentPrice() {
             <!-- Use a CORS Unblocker to test this request locally: https://github.com/balvin-perrie/Access-Control-Allow-Origin---Unblock/ -->
             <!-- It can also fail if the host doesn't support CORS (eg, GitHub Pages). Then it's necessary to either use another CORS-enabled host or CORS-enabled API (see this list: https://codepen.io/bathalex210/pen/vewyNV ) or use a CORS proxy but it's rate-limited and less safe (never send any credential through proxies, only query public APIs! Although some proxies are safer such as through CorsFlare/Cloudflare workers) or use websockets if the server allows it. -->
@@ -141,11 +144,141 @@ body {
 
         const interval = setInterval(refreshCurrentPrice, 60000);  // refresh every minute
         //clearInterval(interval);  // to stop the constant refresh
+        */
     </script>
 
 </r-scope>
 </article>
 
 </div>
+
+<script src="https://unpkg.com/web3@4.2.2/dist/web3.min.js"></script>
+<script>
+// Update price using blockchain data (off-chain via web3.js)
+// This replaces the old function that used a central exchange (CEX) API for price feeds, so theoretically here this is more robust (just change the contract address to update)
+
+// Connect to a Web3 (blockchain) node using Web3.js and a RPC node (either provided by MetaMask or fallback to a remote provider)
+// const rpcURL = "https://cloudflare-eth.com/"; // remote RPC node URL in case the local provider (such as MetaMask) is not set
+const rpcURL = "https://rpc.ankr.com/eth"; // remote RPC node URL suggested by Chainlink https://docs.chain.link/data-feeds/using-data-feeds#reading-data-feeds-off-chain
+const web3 = new Web3(Web3.givenProvider || rpcURL); // try to use local provider, if fail then use remote provider
+console.log('web3.js loaded');
+// Now we can use the web3 object
+
+function refreshCurrentPrice_v2() {
+    /** Get the price of the selected pair from a Chainlink oracle */
+    // For interacting with curvenote from custom javascript functions, see https://github.com/curvenote/article/issues/12 and https://github.com/curvenote/article/issues/18 and https://github.com/curvenote/article/issues/10
+    let pricefeed_contract_ens = null; // address of the chainlink oracle for the target pair
+    let cryptopair = curvenote.getVariableByName('myscope.cryptopair').get().toLowerCase();  // get current pair to fetch
+    if (cryptopair == "other") {
+        cryptopair = curvenote.getVariableByName('myscope.cryptopair_custom').get().toLowerCase();
+        pricefeed_contract_ens = cryptopair + '.data.eth';
+    } else {
+        switch (cryptopair) {
+            case "btcusd":
+                pricefeed_contract_ens = 'btc-usd.data.eth';
+                break;
+            case "ethusd":
+                pricefeed_contract_ens = 'eth-usd.data.eth';
+                break;
+            case "ethbtc":
+                pricefeed_contract_ens = 'eth-btc.data.eth';
+                break;
+            case "eur-usd":
+                pricefeed_contract_ens = 'eur-usd.data.eth';
+                break;
+        }
+    }
+    // Given a contract ENS, create a promise to fetch the address, then call fetchAndApplyPrice() to fetch price from the contract and update the r-variable
+    web3.eth.ens.getAddress(pricefeed_contract_ens).then(function (address) {
+        console.log(address)
+        fetchAndApplyPrice(address);
+    })
+}
+
+function fetchAndApplyPrice(pricefeed_contract_address) {
+    // ABI (data structure) for the contract, can get it from etherscan (just lookup the contract address, there is a tab for the contract's ABI)
+    const aggregatorV3InterfaceABI = [
+      {
+        inputs: [],
+        name: "decimals",
+        outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+        stateMutability: "view",
+        type: "function",
+      },
+      {
+        inputs: [],
+        name: "description",
+        outputs: [{ internalType: "string", name: "", type: "string" }],
+        stateMutability: "view",
+        type: "function",
+      },
+      {
+        inputs: [{ internalType: "uint80", name: "_roundId", type: "uint80" }],
+        name: "getRoundData",
+        outputs: [
+          { internalType: "uint80", name: "roundId", type: "uint80" },
+          { internalType: "int256", name: "answer", type: "int256" },
+          { internalType: "uint256", name: "startedAt", type: "uint256" },
+          { internalType: "uint256", name: "updatedAt", type: "uint256" },
+          { internalType: "uint80", name: "answeredInRound", type: "uint80" },
+        ],
+        stateMutability: "view",
+        type: "function",
+      },
+      {
+        inputs: [],
+        name: "latestRoundData",
+        outputs: [
+          { internalType: "uint80", name: "roundId", type: "uint80" },
+          { internalType: "int256", name: "answer", type: "int256" },
+          { internalType: "uint256", name: "startedAt", type: "uint256" },
+          { internalType: "uint256", name: "updatedAt", type: "uint256" },
+          { internalType: "uint80", name: "answeredInRound", type: "uint80" },
+        ],
+        stateMutability: "view",
+        type: "function",
+      },
+      {
+        inputs: [],
+        name: "version",
+        outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+        stateMutability: "view",
+        type: "function",
+      },
+    ]
+
+    // Query the contract
+    const priceFeed = new web3.eth.Contract(aggregatorV3InterfaceABI, pricefeed_contract_address) // create an access to the oracle contract
+    priceFeed.methods  // send the query
+      .latestRoundData()
+      .call()
+      .then((roundData) => {  // got an async response from the promise
+        // roundData contains the response from the oracle, which includes the price in its smallest unit (eg, satoshis for Bitcoin)
+        console.log("Latest Round Data", roundData)
+        let curprice = Number(roundData[1]) / 1e8;  // extract the price out of roundData (need to divide by 1e8 usually)
+        console.log("Latest price", curprice)
+        curvenote.getVariableByName('myscope.current_price').set(curprice);  // update the current price with the off-chain data
+      })
+
+    // Alternative WIP: Get the price of ETHUSD from the Uniswap V2 pool
+    // Note: NOT FINISHED! Not working! But in theory this is how to do it, just divide one side of the pool by the other to get the current price on the dex
+    /*
+    const pair_address = "0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852";
+    const pair_contract = new web3.eth.Contract(abi, pair_address);
+    pair_contract.methods.getReserves().call()
+    .then(function(data) {
+        console.log(data);
+        let reserve0 = data[0];
+        let reserve1 = data[1];
+        let price = reserve0 / reserve1;
+        console.log(price);
+    });
+    */
+}
+
+const intervalv2 = setInterval(refreshCurrentPrice_v2, 60000);  // refresh every minutes
+//clearInterval(intervalv2);  // to stop the constant refresh
+</script>
+
 </body>
 </html>
