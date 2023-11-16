@@ -255,7 +255,7 @@ function fetchAndApplyPrice(pricefeed_contract_address) {
       .then((roundData) => {  // got an async response from the promise
         // roundData contains the response from the oracle, which includes the price in its smallest unit (eg, satoshis for Bitcoin)
         console.log("Latest Round Data", roundData)
-        let curprice = Number(roundData[1]) / 1e8;  // extract the price out of roundData (need to divide by 1e8 usually)
+        let curprice = Number(roundData[1]) / 1e8;  // extract the price out of roundData (need to divide by 1e8 usually). We need to convert to a Number because we get a bigint and we can't divide by a simple Number without first converting: https://stackoverflow.com/questions/54409854/how-to-divide-two-native-javascript-bigints-and-get-a-decimal-result
         console.log("Latest price", curprice)
         curvenote.getVariableByName('myscope.current_price').set(curprice);  // update the current price with the off-chain data
       })
