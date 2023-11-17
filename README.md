@@ -5,7 +5,7 @@ List of drafts:
 * [Basic example sum calculator](./iooxa-example-sum.html)
 * [Basic example sum calculator - with input fields but no reactive variables (limits the propagation of the recalculation, not all fields get updated, and the code gets messy fast!)](./iooxa-example-sum-input.html)
 * [Basic example sum calculator - using reactive variables (most complete example, very concise and natural code)](./curvenote-example-sum-reactive-variables.html)
-* [A calculator for cryptocurrency risk ratio - shows how to use more complex javascript calls (to fetch exchange rates)](./cryptoriskcalc.html)
+* [A calculator for cryptocurrency risk ratio - shows how to use more complex javascript calls (to fetch exchange rates) with curvenote and using web3.js to query a Chainlink oracle for real-time off-chain price-feeds](./cryptoriskcalc.html)
 
 All of these scripts are self-contained, they can be downloaded and used offline (as long as you also download curvenote-article package and css).
 
