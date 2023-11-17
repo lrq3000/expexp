@@ -28,6 +28,7 @@ Made on 2023-11-08 by Stephen Larroque
     c: <r-input label="c" :value="c" :change="{c: parseFloat(value)}"></r-input>
     <br />sum (a+b+c): <r-input label="Sum" :value="sum" :change="{a: value-b-c}"></r-input> <!-- Instead of assigning the new `value` in `sum` with `:change="{sum: value}"`, which would only update `sum` when we edit `sum` but not edit the summed variables `a,b,c`, we instead change one of these variables, and then the reactive calculation will trickle downstream and force the recalculation of `sum`, which should be exactly the same as the user inputted. In other words, once the user changes sum value and validates, the value is then in fact replaced by the recalculation from a+b+c, with a changed retroactively, but the user does not see anything because we readjusted a so that sum is equal to the new user inputted value. -->
     <br />sum squared (a+b+c)²: <r-input label="Sum squared" :value="sumsquared" :change="{a: Math.sqrt(parseFloat(value))-b-c}"></r-input> <!-- Here we do the same but in addition we use a Javascript function to calculate the square root. We can use any Javascript function in reactive properties (any property prepended by `:` in curvenote components) -->
+    <p>Another way to calculate and display the results dynamically is to use javascript functions in the :value attribute : sum squared = <r-display :value="Math.pow(a+b+c, 2)"></r-display> (or in concise scientific notation: <r-display :value="sumsquared" format=".1s"></r-display>).
     </div>
 </div>
 </body>
