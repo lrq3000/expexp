@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<!--
+Baby and small animals drug dosage calculator
+
+Made on 2023-11-18 by Stephen Larroque
+v0.5
+-->
+<head>
+<meta charset="utf-8"> <!-- IMPORTANT: this is necessary to run curvenote without a server! -->
+<link rel="stylesheet" href="https://unpkg.com/@curvenote/article/dist/curvenote.css" />
+<script async src="https://unpkg.com/@curvenote/article" charset="utf-8"></script> <!-- IMPORTANT: charset="utf-8" is necessary to run curvenote without a server! -->
+<style>
+#main {
+    margin: 3em;
+    margin-top: 2em;
+    font-size: 110%;
+}
+h1 {
+    font-size: 1.4em;
+}
+h2 {
+    font-size: 1.1em;
+}
+section {
+    border-bottom: black dashed 1px;
+    padding-bottom: 1em;
+    margin-bottom: 1em;
+}
+r-input, input, mwc-textfield, .mdc-floating-label, .mdc-floating-label--float-above, .mdc-text-field--filled {
+    font-size: 130% !important;
+}
+body {
+    --mdc-typography-subtitle1-font-size: 100%;
+}
+</style>
+</head>
+<body>
+<div id="main">
+
+<article>
+<h1>Baby and small animals drugs dosage calculator</h1>
+<r-scope name="variables_scope">
+
+    <!-- Reactive variables definition -->
+    <!-- curvenote does not support < /> tag format and no dash - in variables names -->
+    <!-- Reactive variables have attributes that start with a semicolon, such as :value, which mean the value is automatically refreshed according to other variables. -->
+    <!-- TODO: Maybe to facilitate calculations, all calculations should be normalized on the unit without the magnitude, eg, grams, not milligrams nor kilograms. The issue is that inputs are usually in kg or mg, so we need to internally convert inputs, but then it reduces the chance for errors in the internal calculations, we just have to ensure we sanitize inputs and outputs. BUT then it can be confusing when maintaining, eg, target_drug_dosage_per_patient_weight is in mg/kg, but if standardized it would be g/g, so it's easier to mess up calculations... -->
+    <r-var name="calc_type" value="1" type="String"></r-var>
+    <r-var name="drug_name" value="Generic drug" type="String"></r-var>
+    <r-var name="percent" value="10.0" type="Number" format=".1f"></r-var>
+    <r-var name="concentration_percent" :value="percent/100*1000" type="Number"></r-var> <!-- Active ingredient concentration given a percentage, in grams. Divide by 100 because a percentage, then multiply by 1000 to convert from grams to milligrams. -->
+    <r-var name="available_drug_dosage_per_unit" value="20" type="Number"></r-var> <!-- in mg/unit -->
+    <r-var name="target_drug_dosage_per_patient_weight" value="40" type="Number"></r-var> <!-- in mg/kg -->
+    <r-var name="target_drug_dosage_timeframe" value="day" type="String"></r-var>
+    <r-var name="patient_weight" value="0.02" type="Number"></r-var> <!-- in kg -->
+    <r-var name="calc_target_dosage" :value="target_drug_dosage_per_patient_weight * patient_weight / 1000" type="Number"></r-var> <!-- in g/time (we divide by 1000 to convert from mg to g) -->
+    <r-var name="calc_target_dosage_per_day" :value="calc_target_dosage * (target_drug_dosage_timeframe == 'day' ? 1 : target_drug_dosage_timeframe == 'hour' ? 24 : target_drug_dosage_timeframe == 'min' ? 1440 : target_drug_dosage_timeframe == 'sec' ?  86400 : NaN)" type="Number"></r-var> <!-- in g/day -->
+    <r-var name="calc_target_dosage_concentration" :value="calc_target_dosage/concentration_percent" type="Number"></r-var> <!-- in L/time -->
+    <r-var name="calc_target_dosage_concentration_per_day" :value="calc_target_dosage_per_day/concentration_percent" type="Number"></r-var> <!-- in L/day -->
+    <r-var name="calc_target_dosage_per_unit" :value="calc_target_dosage/ (available_drug_dosage_per_unit/1000)" type="Number"></r-var> <!-- divide by 1000 to convert available_drug_dosage_per_unit from mg/unit to g/unit, in unit/time -->
+    <r-var name="calc_target_dosage_per_unit_per_day" :value="calc_target_dosage_per_day/ (available_drug_dosage_per_unit/1000)" type="Number"></r-var> <!-- in unit/day -->
+    <r-var name="animal" value="true" type="Boolean"></r-var> <!-- true or false -->
+    <r-var name="drink_percent_weight" value="25" type="Number"></r-var> <!-- percentage of animal's weight -->
+    <r-var name="drink_volume_per_day" :value="drink_percent_weight/100 * patient_weight" type="Number"></r-var> <!-- volume of water the animal can drink per day in proportion with their weight, in ml -->
+
+    <div style="display: flex; flex-direction: column">
+        <section>
+            <h2>Introduction</h2>
+            <p>Adequate dosage respecting posology (weight of the patient) is crucial for drug efficacy (avoid underdosing) and safety (avoid overdosing). Unfortunately, one of the top causes of iatrogeny is when clinicans prescribe or administer an inadequate dosage (ADD REF), which more often happen when they are not specialized in small creatures. Indeed, this affects both small non-human creatures such as birds, but also more worryingly human newborns and babies.<p/>
+            <p>Below you can find a calculator that implements recommendations found in <a href="https://web.archive.org/web/20201006000725/https://www.soignantenehpad.fr/pages/prepa-concours-paramedical/esi-entrainement-aux-calculs-des-doses/le-calcul-de-dose-et-de-debit.html">this document</a> for nurses (in French) to reduce dosage calculations errors, as well as a few additional parameters that pertain to non-collaborative patients such as small animals, such as the percentage of intake.</p>
+            <p>This calculator should be filled with values that can be found either in the drug's documentation, or in clinicians compendium books (either for humans or veterinary depending on who your patients are) to get the adequate dosages (ie, make sure to target the dosage for the adequate target population, eg, ensure it's the dosage for babies, or for newborns, not just children of several years old ; likewise for animals, even under one order, there can be wide differences, eg, a different dosage for parrots that are big and for much smaller finches).</p>
+            <p>Although we tried to ensure the calculations here are correct and this tool is intended as a way for clinicians to quickly double-check their calculations, it should not be used by anyone else but trained clinical staff, and it should always be used after you do your calculations first on your own, please only use this calculator to double-check as a safety measure.</p>
+            <p>Tip: all inputs should be standardized to mg, ml and kg. If you need to do conversion, such as the dosage per volume, try to convert using the awesome open-source scientific calculator <a href="https://qalculate.github.io/">Qalculate desktop software</a>, also <a href="https://qalculator.xyz/">available online here</a> or <a href="https://flaviutamas.com/qalculate-wasm/">here</a> (TODO: maybe will be implemented here in the future using WASM). Qalculate can also be used to check the calculations such as the sanity checks (just replace some of the terms, eg, unit -> x, day -> d).</p>
+            <p>Tip2: the posology often changes depending on the the weight range and the animal specie, since some animals have a faster metabolism than others or are more sensitive to some molecules.</p>
+            <p>Important: make sure you work in mg (milligrams) and ml (milliliters), not mcg (nonstandard notation for micrograms, standard notation: ug). Convert mcg beforehand to mg by dividing by 1000.</p>
+            <p>Important2: the app recopies all the inputs (sometimes in a reformulated way such as scientific notation) before giving the resulting outputs, please read carefully to check if the inputs are what you expected.</p>
+            <p><strong>DISCLAIMER: NO WARRANTY OF ANY SORT IS PROVIDED, NOT EVEN OF CORRECTNESS. IT IS YOUR RESPONSIBILITY TO ENSURE THE RESULTS ARE CORRECT.</strong></p>
+        </section>
+
+        <section>
+            <h2>Model's inputs</h2>
+            <!-- <br />a: <r-input label="a" :value="a" :change="{a: parseFloat(value)}"></r-input> --> <!-- as of January 2021, it's necessary to use parseFloat(value) to ensure that the input value will be stored as a float and not as a string, as otherwise the calculations down the stream such as sum will return a concatenated string instead of a sum of numbers. When this will be fixed, a simple bind="a" will be sufficient here instead of :value="a" and :change="{a: parseFloat(value)}" -->
+            Drug name (optional, just to ease sharing results with colleagues): <r-input bind="drug_name"></r-input>
+            
+            <br />Target drug dosage (in mg/kg of patient's weight): <r-input min=0 :value="target_drug_dosage_per_patient_weight" :change="{target_drug_dosage_per_patient_weight: parseFloat(value)}"></r-input>
+            per (time): <r-select bind="target_drug_dosage_timeframe" values="day,hour,min,sec"></r-select>
+            <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".2s"></r-display>g/kg/<r-display :value="target_drug_dosage_timeframe"></r-display>
+            
+            <br />Patient's weight (in kg): <r-input min=0 :value="patient_weight" :change="{patient_weight: parseFloat(value)}"></r-input>
+            <r-display :value="patient_weight*1000" format=".1s"></r-display>g
+            
+            <br />Type of calculation:
+            <r-radio bind="calc_type" values="1,2" :labels="'Percentage,Per Unit'" min=1 max=2></r-radio>
+            <r-visible :visible="calc_type==1" hidden="">
+            Percentage (of active ingredient in the solution): <r-input min=0 max=100 :value="percent" :change="{percent: parseFloat(value)}"></r-input>
+            <r-display :value="percent" format="3.2f"></r-display>%
+            </r-visible>
+            
+            <r-visible :visible="calc_type==2" hidden="">
+            Dosage of the available drug formulation (in mg per unit, eg, mg per tablet): <r-input min=0 :value="available_drug_dosage_per_unit" :change="{available_drug_dosage_per_unit: parseFloat(value)}"></r-input>
+            <r-display :value="available_drug_dosage_per_unit/1000" format=".1s"></r-display>g/unit
+            </r-visible>
+            
+            <br />Is the patient an animal? <r-checkbox bind="animal"></r-checkbox>
+            
+            <r-visible :visible="animal" hidden="">
+            <br />Drink percentage per day (in animal's weight): <r-input min=0 max=100 :value="drink_percent_weight" :change="{drink_percent_weight: parseFloat(value)}"></r-input>
+            <r-display :value="drink_percent_weight" format="3.2f"></r-display>%
+            <p><small>
+                Note: Animals of smaller weight tend to drink a lot more than bigger animals in proportion to their weight. Ref: "Water consumption in birds is influenced by species, age, size, environmental temperatures, and both the type and amount of food that is consumed. Water intake often relates inversely to body size and ranges between 5% and 50% of body weight per day.19 Young birds tend to consume more water than adults. Carnivorous birds as well as those that have evolved in arid environments normally drink little water." Veterinary Hematology and Clinical Chemistry by Mary Anna Thrall et al, 2nd edition, 2012, chapter Electrolytes and acid/base balance
+            </small></p>
+            </r-visible>
+        </section>
+
+        <section>
+            <h2>Results</h2>
+            <p>The following results pertain to the drug: <r-display :value="drug_name"></r-display> <r-display :value="calc_type == 1 ? percent : available_drug_dosage_per_unit"></r-display><r-visible :visible="calc_type == 1" hidden="">% solution</r-visible><r-visible :visible="calc_type == 2" hidden="">mg/unit</r-visible>.</p>
+            <p>
+                Given a target drug dosage of <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".1s"></r-display>g/kg of patient's weight, for a patient weighting <r-display :value="patient_weight*1000" format=".1s"></r-display>g, the dosage would be <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>
+                <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_day" format="2.2s"></r-display>g/day)</r-visible> of the active ingredient.
+            </p>
+            <p>
+            <r-visible :visible="calc_type==1" hidden="">
+                For a <r-display :value="percent" format="0.2f"></r-display>% solution of <r-display :value="drug_name"></r-display>, active ingredient concentration is <r-display :value="concentration_percent" format=".1f" <!-- use f template if you want to use a specific magnitude, eg, milligrams; or use s template for dynamic magnitude, eg, all values should be in grams, then the template will prepend m for mg, k for kg, etc depending on magnitude -->></r-display>mg/ml (scientific notation: <r-display :value="concentration_percent/1000" format=".1s"></r-display>g/ml) or <r-display :value="concentration_percent/1000*100" format=".1s" <!-- divide by 1000 to convert from mg to g, then multiply by 100ml -->></r-display>g/100ml (active ingredient / volume of host solution).
+                
+                The patient must be provided with <r-display :value="calc_target_dosage_concentration" format=".3s"></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
+                <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l/day)</r-visible>
+                of the formulation at the above available dosage.
+                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_concentration" format=".3s"></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display> * <r-display :value="concentration_percent/1000" format=".1s"></r-display>g/ml = <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
+                
+                <r-visible :visible="animal" hidden="">
+                    <br/><br/>For animals, if diluted in 1L of drinking water, <r-display :value="calc_target_dosage/concentration_percent*1000" format=".3s" <!-- multiply by 1000 to convert from ml to 1 Liter -->></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
+                    <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_day/concentration_percent*1000" format=".3s" <!-- multiply by 1000 and by 1000 again as for before -- NB GOTCHA: NEVER put a comment just after :value and before format, then format won't work! -->></r-display>l/day)</r-visible>
+                    of the available drug formulation must be diluted. If we take into account that the animal drinks <r-display :value="drink_percent_weight"></r-display>% of their body weight per day, or <r-display :value="drink_volume_per_day" format="2.2s"></r-display>l/day (because 1ml of water = 1g).
+                </r-visible>
+            </r-visible>
+            <r-visible :visible="calc_type==2" hidden="">
+                For an available active ingredient formulation of <r-display :value="available_drug_dosage_per_unit" format=".2f"></r-display>mg/unit (scientific notation: <r-display :value="available_drug_dosage_per_unit/1000" format=".1s"></r-display>g/unit) of <r-display :value="drug_name"></r-display>.
+                
+                The patient must be provided with <r-display :value="calc_target_dosage_per_unit" format=".3g" <!-- never forget to add the format argument, otherwise if value too small it may just show 0 and this can be difficult to debug -->></r-display> units per <r-display :value="target_drug_dosage_timeframe"></r-display>
+                <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_unit_per_day" format=".3g"></r-display> units per day)</r-visible>.
+                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_unit" format=".3g"></r-display>unit * <r-display :value="available_drug_dosage_per_unit/1000" format=".2s"></r-display>g/unit = <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
+            </r-visible>
+            </p>
+        </section>
+
+        <section>
+            <p>Licensed under MIT. <a href="https://github.com/lrq3000/expexp">Source code</a>.</p>
+        </section>
+    </div>
+
+</r-scope>
+</article>
+
+</div>
+</body>
+</html>
