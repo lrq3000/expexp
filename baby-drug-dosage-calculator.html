@@ -60,7 +60,7 @@ body {
     <r-var name="calc_target_dosage_concentration_per_day" :value="calc_target_dosage_per_day/concentration_percent" type="Number"></r-var> <!-- in L/day -->
     <r-var name="calc_target_dosage_per_unit" :value="calc_target_dosage/ (available_drug_dosage_per_unit/1000)" type="Number"></r-var> <!-- divide by 1000 to convert available_drug_dosage_per_unit from mg/unit to g/unit, in unit/time -->
     <r-var name="calc_target_dosage_per_unit_per_day" :value="calc_target_dosage_per_day/ (available_drug_dosage_per_unit/1000)" type="Number"></r-var> <!-- in unit/day -->
-    <r-var name="animal" value="true" type="Boolean"></r-var> <!-- true or false -->
+    <r-var name="animal" value="false" type="Boolean"></r-var> <!-- true or false -->
     <r-var name="drink_percent_weight" value="25" type="Number"></r-var> <!-- percentage of animal's weight -->
     <r-var name="drink_volume_per_day" :value="drink_percent_weight/100 * patient_weight" type="Number"></r-var> <!-- volume of water the animal can drink per day in proportion with their weight, in ml -->
     <r-var name="drink_volume_divisor" :value="drink_volume_per_day*1000" type="Number"></r-var> <!-- a float -->
