@@ -4,7 +4,7 @@
 Baby and small animals drug dosage calculator
 
 Made on 2023-11-18 by Stephen Larroque
-v1.0.0
+v1.1.0
 -->
 <head>
 <meta charset="utf-8"> <!-- IMPORTANT: this is necessary to run curvenote without a server! -->
@@ -51,9 +51,9 @@ body {
     <r-var name="percent" value="10.0" type="Number" format=".1f"></r-var>
     <r-var name="concentration_percent" :value="percent/100*1000" type="Number"></r-var> <!-- Active ingredient concentration given a percentage, in grams. Divide by 100 because a percentage, then multiply by 1000 to convert from grams to milligrams. -->
     <r-var name="available_drug_dosage_per_unit" value="20" type="Number"></r-var> <!-- in mg/unit -->
-    <r-var name="target_drug_dosage_per_patient_weight" value="40" type="Number"></r-var> <!-- in mg/kg -->
+    <r-var name="target_drug_dosage_per_patient_weight" value="7.5" type="Number"></r-var> <!-- in mg/kg -->
     <r-var name="target_drug_dosage_timeframe" value="day" type="String"></r-var>
-    <r-var name="patient_weight" value="0.02" type="Number"></r-var> <!-- in kg -->
+    <r-var name="patient_weight" value="0.022" type="Number"></r-var> <!-- in kg --> <!-- TODO: if value too small like 0.022, it shows 20g instead of 22g, but other calculations are correctly done. -->
     <r-var name="calc_target_dosage" :value="target_drug_dosage_per_patient_weight * patient_weight / 1000" type="Number"></r-var> <!-- in g/time (we divide by 1000 to convert from mg to g) -->
     <r-var name="calc_target_dosage_per_day" :value="calc_target_dosage * (target_drug_dosage_timeframe == 'day' ? 1 : target_drug_dosage_timeframe == 'hour' ? 24 : target_drug_dosage_timeframe == 'min' ? 1440 : target_drug_dosage_timeframe == 'sec' ?  86400 : NaN)" type="Number"></r-var> <!-- in g/day -->
     <r-var name="calc_target_dosage_concentration" :value="calc_target_dosage/concentration_percent" type="Number"></r-var> <!-- in L/time -->
@@ -77,6 +77,7 @@ body {
             <p>Tip2: the posology often changes depending on the the weight range and the animal specie, since some animals have a faster metabolism than others or are more sensitive to some molecules.</p>
             <p>Important: make sure you work in mg (milligrams) and ml (milliliters), not mcg (nonstandard notation for micrograms, standard notation: ug). Convert mcg beforehand to mg by dividing by 1000.</p>
             <p>Important2: the app recopies all the inputs (sometimes in a reformulated way such as scientific notation) before giving the resulting outputs, please read carefully to check if the inputs are what you expected.</p>
+            <p>Limitations: numbers are sometimes rounded off starting from the 4th most significant digit. So this should not be a big issue since 3 significant digits are usually more than sufficient for most clinical purposes, but just be aware of this if you see some numbers not totally fitting together. I need to learn more about javascript strings templating to try to avoid this issue.</p>
             <p><strong>DISCLAIMER: NO WARRANTY OF ANY SORT IS PROVIDED, NOT EVEN OF CORRECTNESS. IT IS YOUR RESPONSIBILITY TO ENSURE THE RESULTS ARE CORRECT.</strong></p>
         </section>
 
@@ -87,10 +88,10 @@ body {
             
             <br />Target drug dosage (in mg/kg of patient's weight): <r-input min=0 :value="target_drug_dosage_per_patient_weight" :change="{target_drug_dosage_per_patient_weight: parseFloat(value)}"></r-input>
             per (time): <r-select bind="target_drug_dosage_timeframe" values="day,hour,min,sec"></r-select>
-            <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".2s"></r-display>g/kg/<r-display :value="target_drug_dosage_timeframe"></r-display>
+            <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".3s"></r-display>g/kg/<r-display :value="target_drug_dosage_timeframe"></r-display>
             
             <br />Patient's weight (in kg): <r-input min=0 :value="patient_weight" :change="{patient_weight: parseFloat(value)}"></r-input>
-            <r-display :value="patient_weight*1000" format=".1s"></r-display>g
+            <r-display :value="patient_weight*1000" format=".3s"></r-display>g
             
             <br />Type of calculation:
             <r-radio bind="calc_type" values="1,2" :labels="'Percentage,Per Unit'" min=1 max=2></r-radio>
@@ -101,7 +102,7 @@ body {
             
             <r-visible :visible="calc_type==2" hidden="">
             Dosage of the available drug formulation (in mg per unit, eg, mg per tablet): <r-input min=0 :value="available_drug_dosage_per_unit" :change="{available_drug_dosage_per_unit: parseFloat(value)}"></r-input>
-            <r-display :value="available_drug_dosage_per_unit/1000" format=".1s"></r-display>g/unit
+            <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit
             </r-visible>
             
             <br />Is the patient an animal? <r-checkbox bind="animal"></r-checkbox>
@@ -119,34 +120,37 @@ body {
             <h2>Results</h2>
             <p>The following results pertain to the drug: <r-display :value="drug_name"></r-display> <r-display :value="calc_type == 1 ? percent : available_drug_dosage_per_unit"></r-display><r-visible :visible="calc_type == 1" hidden="">% solution</r-visible><r-visible :visible="calc_type == 2" hidden="">mg/unit</r-visible>.</p>
             <p>
-                Given a target drug dosage of <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".1s"></r-display>g/kg of patient's weight, for a patient weighting <r-display :value="patient_weight*1000" format=".1s"></r-display>g, the dosage would be <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>
-                <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_day" format="2.2s"></r-display>g/day)</r-visible> of active ingredient to administer to the patient.
+                Given a target drug dosage of <r-display :value="target_drug_dosage_per_patient_weight/1000" format=".3s"></r-display>g/kg of patient's weight, for a patient weighting <r-display :value="patient_weight*1000" format=".3s"></r-display>g, the dosage would be <r-display :value="calc_target_dosage" format=".3s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>
+                <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_day" format="2.3s"></r-display>g/day)</r-visible> of active ingredient to administer to the patient.
             </p>
             <p>
             <r-visible :visible="calc_type==1" hidden="">
-                For a <r-display :value="percent" format="0.2f"></r-display>% solution of <r-display :value="drug_name"></r-display>, active ingredient concentration is <r-display :value="concentration_percent" format=".1f" <!-- use f template if you want to use a specific magnitude, eg, milligrams; or use s template for dynamic magnitude, eg, all values should be in grams, then the template will prepend m for mg, k for kg, etc depending on magnitude -->></r-display>mg/ml (scientific notation: <r-display :value="concentration_percent/1000" format=".1s"></r-display>g/ml) or <r-display :value="concentration_percent/1000*100" format=".1s" <!-- divide by 1000 to convert from mg to g, then multiply by 100ml -->></r-display>g/100ml (active ingredient / volume of host solution).
+                For a <r-display :value="percent" format="0.2f"></r-display>% solution of <r-display :value="drug_name"></r-display>, active ingredient concentration is <r-display :value="concentration_percent" format=".1f" <!-- use f template if you want to use a specific magnitude, eg, milligrams; or use s template for dynamic magnitude, eg, all values should be in grams, then the template will prepend m for mg, k for kg, etc depending on magnitude -->></r-display>mg/ml (scientific notation: <r-display :value="concentration_percent/1000" format=".3s"></r-display>g/ml) or <r-display :value="concentration_percent/1000*100" format=".3s" <!-- divide by 1000 to convert from mg to g, then multiply by 100ml -->></r-display>g/100ml (active ingredient / volume of host solution).
                 
                 The patient must be administered with <r-display :value="calc_target_dosage_concentration" format=".3s"></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
                 <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l/day)</r-visible>
                 of the formulation at the above available dosage.
-                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_concentration" format=".3s"></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display> * <r-display :value="concentration_percent/1000" format=".1s"></r-display>g/ml = <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
+                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_concentration" format=".3s"></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display> * <r-display :value="concentration_percent/1000" format=".3s"></r-display>g/ml = <r-display :value="calc_target_dosage" format=".3s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
                 
                 <r-visible :visible="animal" hidden="">
                     <br/><br/>For animals, if diluted to get 1L of drinking water with the drug, <r-display :value="calc_target_dosage_concentration*1000" format=".3s" <!-- multiply by 1000 to convert from ml to 1 Liter -->></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
                     <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_concentration_per_day*1000" format=".3s" <!-- multiply by 1000 and by 1000 again as for before -- NB GOTCHA: NEVER put a comment just after :value and before format, then format won't work! -->></r-display>l/day)</r-visible>
-                    of the available drug formulation must be diluted in <r-display :value="1.0-(calc_target_dosage_concentration_per_day*1000)" format=".3s"></r-display>L/day of drinking water. The resulting volume would then have <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l of the available drug formulation per ml of resulting volume, which is <r-display :value="calc_target_dosage_per_day" format="2.2s"></r-display>g/day of active ingredient per ml, to be renewed per day.
-                    <br />However, if we take into account that the patient drinks on average <r-display :value="drink_percent_weight"></r-display>% of their body weight per day, or <r-display :value="drink_volume_per_day" format="2.2s"></r-display>l/day (because 1ml of water = 1g), then the volume of available drug formulation to dilute should be divided by <r-display :value="drink_volume_divisor" format=".3g"></r-display> times, which is <r-display :value="calc_target_dosage_concentration_per_day_divided_by_drink_volume" format=".3s"></r-display>l/day (instead of <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l/day). Hence, to get 1L of drinking water with the drug accounting for the average drinked volume relative to the patient's weight, <r-display :value="calc_target_dosage_concentration/drink_volume_divisor*1000" format=".3s" <!-- multiply by 1000 to convert from ml to 1 Liter -->></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
+                    of the available drug formulation must be diluted in <r-display :value="1.0-(calc_target_dosage_concentration_per_day*1000)" format=".3s"></r-display>L/day of drinking water. The resulting volume would then have <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l of the available drug formulation per ml of resulting volume, which is <r-display :value="calc_target_dosage_per_day" format="2.3s"></r-display>g/day of active ingredient per ml, to be renewed per day.
+                    <br />However, if we take into account that the patient drinks on average <r-display :value="drink_percent_weight"></r-display>% of their body weight per day, or <r-display :value="drink_volume_per_day" format="2.3s"></r-display>l/day (because 1ml of water = 1g), then the volume of available drug formulation to dilute should be divided by <r-display :value="drink_volume_divisor" format=".3g"></r-display> times, which is <r-display :value="calc_target_dosage_concentration_per_day_divided_by_drink_volume" format=".3s"></r-display>l/day (instead of <r-display :value="calc_target_dosage_concentration_per_day" format=".3s"></r-display>l/day). Hence, to get 1L of drinking water with the drug accounting for the average drinked volume relative to the patient's weight, <r-display :value="calc_target_dosage_concentration/drink_volume_divisor*1000" format=".3s" <!-- multiply by 1000 to convert from ml to 1 Liter -->></r-display>l/<r-display :value="target_drug_dosage_timeframe"></r-display>
                     <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_concentration_per_day_divided_by_drink_volume*1000" format=".3s" <!-- multiply by 1000 and by 1000 again as for before -- NB GOTCHA: NEVER put a comment just after :value and before format, then format won't work! -->></r-display>l/day)</r-visible>
-                    of the available drug formulation must be diluted in <r-display :value="1.0-(calc_target_dosage_concentration_per_day_divided_by_drink_volume*1000)" format=".3s"></r-display>L/day of drinking water. The resulting volume would then have <r-display :value="calc_target_dosage_concentration_per_day_divided_by_drink_volume" format=".3s"></r-display>l of the available drug formulation per ml of resulting volume, which is <r-display :value="calc_target_dosage_per_day/drink_volume_divisor" format="2.2s"></r-display>g/day of active ingredient per ml, to be renewed per day.
-                    <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_day/drink_volume_divisor" format="2.2s"></r-display>g/ml/day * <r-display :value="drink_volume_per_day" format=".3s"></r-display>l/day = <r-display :value="calc_target_dosage_per_day" format="2.2s"></r-display>g/day of active ingredient administered )</small>
+                    of the available drug formulation must be diluted in <r-display :value="1.0-(calc_target_dosage_concentration_per_day_divided_by_drink_volume*1000)" format=".3s"></r-display>L/day of drinking water. The resulting volume would then have <r-display :value="calc_target_dosage_concentration_per_day_divided_by_drink_volume" format=".3s"></r-display>l of the available drug formulation per ml of resulting volume, which is <r-display :value="calc_target_dosage_per_day/drink_volume_divisor" format="2.3s"></r-display>g/day of active ingredient per ml, to be renewed per day.
+                    <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_day/drink_volume_divisor" format="2.3s"></r-display>g/ml/day * <r-display :value="drink_volume_per_day" format=".3s"></r-display>l/day = <r-display :value="calc_target_dosage_per_day" format="2.3s"></r-display>g/day of active ingredient administered )</small>
                 </r-visible>
             </r-visible>
             <r-visible :visible="calc_type==2" hidden="">
-                For an available active ingredient formulation of <r-display :value="available_drug_dosage_per_unit" format=".2f"></r-display>mg/unit (scientific notation: <r-display :value="available_drug_dosage_per_unit/1000" format=".1s"></r-display>g/unit) of <r-display :value="drug_name"></r-display>.
+                For an available active ingredient formulation of <r-display :value="available_drug_dosage_per_unit" format=".2f"></r-display>mg/unit (scientific notation: <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit) of <r-display :value="drug_name"></r-display>.
                 
                 The patient must be administered with <r-display :value="calc_target_dosage_per_unit" format=".3g" <!-- never forget to add the format argument, otherwise if value too small it may just show 0 and this can be difficult to debug -->></r-display> units per <r-display :value="target_drug_dosage_timeframe"></r-display>
                 <r-visible :visible="target_drug_dosage_timeframe!='day'" hidden="">(or <r-display :value="calc_target_dosage_per_unit_per_day" format=".3g"></r-display> units per day)</r-visible>.
-                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_unit" format=".3g"></r-display>unit * <r-display :value="available_drug_dosage_per_unit/1000" format=".2s"></r-display>g/unit = <r-display :value="calc_target_dosage" format=".2s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
+                <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_unit" format=".3g"></r-display>unit * <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit = <r-display :value="calc_target_dosage" format=".3s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
+                
+                <br /><br />In case dosage is too small to be administered, it can be diluted in a volume to allow to administer drops with a syringe. If we assume the droplet to be 0.2ml, then dilute one unit into <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l of water, to be renewed per <r-display :value="target_drug_dosage_timeframe"></r-display>.
+                <br /><small>(Sanity checks: <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.2ml / <r-display :value="calc_target_dosage" format=".3s"></r-display>g = <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l host volume to dilute an unit ; <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.2ml / <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l =  <r-display :value="calc_target_dosage" format=".3s"></r-display>g of active ingredient administered)</small>
             </r-visible>
             </p>
         </section>
