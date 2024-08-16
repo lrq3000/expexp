@@ -4,7 +4,8 @@
 Small patients drug dosage calculator
 
 Made on 2023-11-18 by Stephen Larroque
-v1.2.0
+Last updated on 2024-08-16
+v1.2.1
 -->
 <head>
 <meta charset="utf-8"> <!-- IMPORTANT: this is necessary to run curvenote without a server! -->
@@ -150,8 +151,8 @@ body {
                 <br /><small>(Sanity check: <r-display :value="calc_target_dosage_per_unit" format=".3g"></r-display>unit * <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit = <r-display :value="calc_target_dosage" format=".3s"></r-display>g/<r-display :value="target_drug_dosage_timeframe"></r-display>).</small>
 
                 <r-visible :visible="animal" hidden="">
-                    <br /><br />In case dosage is too small to be administered, it can be diluted in a volume to allow to administer drops with a syringe. If we assume the droplet to be 0.2ml, then dilute one unit into <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l of water, to be renewed per <r-display :value="target_drug_dosage_timeframe"></r-display>.
-                    <br /><small>(Sanity checks: <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.2ml / <r-display :value="calc_target_dosage" format=".3s"></r-display>g = <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l host volume to dilute an unit ; <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.2ml / <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l =  <r-display :value="calc_target_dosage" format=".3s"></r-display>g of active ingredient administered)</small>
+                    <br /><br />In case dosage is too small to be administered, it can be diluted in a volume to allow to administer drops with a syringe. If we assume the droplet to be 0.02ml (the smallest droplet possible with the smallest clinical syringes available: 1mL syringes), then dilute one unit into <r-display :value="available_drug_dosage_per_unit/1000 * 0.00002 / calc_target_dosage" format=".3s"></r-display>l of water, to be renewed per <r-display :value="target_drug_dosage_timeframe"></r-display>.
+                    <br /><small>(Sanity checks: <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.02ml / <r-display :value="calc_target_dosage" format=".3s"></r-display>g = <r-display :value="available_drug_dosage_per_unit/1000 * 0.0002 / calc_target_dosage" format=".3s"></r-display>l host volume to dilute an unit ; <r-display :value="available_drug_dosage_per_unit/1000" format=".3s"></r-display>g/unit * 0.02ml / <r-display :value="available_drug_dosage_per_unit/1000 * 0.00002 / calc_target_dosage" format=".3s"></r-display>l =  <r-display :value="calc_target_dosage" format=".3s"></r-display>g of active ingredient administered)</small>
                 </r-visible>
             </r-visible>
             </p>
